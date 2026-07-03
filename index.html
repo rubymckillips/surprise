@@ -131,7 +131,7 @@ button.run:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px
   perspective: 1000px;
 }
 .ticket {
-  pointer-events: auto;
+  pointer-events: none;
   width: min(560px, 94vw);
   background: var(--ticket-paper);
   color: var(--ticket-ink);
@@ -143,7 +143,7 @@ button.run:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px
   transform: translateY(60px) rotateX(25deg) scale(.9);
   box-shadow: 0 30px 80px rgba(0,0,0,.6);
 }
-.ticket.show {
+.ticket.show {pointer-events: auto;
   animation: ticketIn .9s cubic-bezier(.2,.9,.3,1.15) forwards;
 }
 @keyframes ticketIn {
