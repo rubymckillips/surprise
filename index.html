@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>surprise.py</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Archivo+Black&family=Archivo:wght@500;700&display=swap');
+
+:root {
+  --bg: #0b0e1a;
+  --terminal: #131829;
+  --terminal-border: #232b45;
+  --text: #c9d4f0;
+  --dim: #5a6690;
+  --green: #4ade80;
+  --coral: #ff6b6b;
+  --yellow: #ffd93d;
+  --teal: #4ecdc4;
+  --magenta: #e86ad0;
+  --ticket-paper: #fdf8ef;
+  --ticket-ink: #1a1f35;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  padding: 24px 16px;
+  overflow-x: hidden;
+}
+
+.stage {
+  width: 100%;
+  max-width: 640px;
+  position: relative;
+}
+
+/* ---------- Terminal ---------- */
+.terminal {
+  background: var(--terminal);
+  border: 1px solid var(--terminal-border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  transition: transform .6s ease, opacity .6s ease;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #0e1322;
+  border-bottom: 1px solid var(--terminal-border);
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+.titlebar span {
+  margin-left: 8px;
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.screen {
+  padding: 20px 22px 26px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  min-height: 320px;
+}
+
+.line { white-space: pre-wrap; word-break: break-word; }
+.c-kw { color: var(--magenta); }
+.c-str { color: var(--yellow); }
+.c-fn { color: var(--teal); }
+.c-cm { color: var(--dim); font-style: italic; }
+.c-ok { color: var(--green); }
+.c-prompt { color: var(--green); font-weight: 700; }
+.c-warn { color: var(--coral); }
+
+.cursor {
+  display: inline-block;
+  width: 8px; height: 16px;
+  background: var(--green);
+  vertical-align: -2px;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.runbar {
+  padding: 0 22px 24px;
+  display: none;
+}
+.runbar.show { display: block; }
+button.run {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #06210f;
+  background: var(--green);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 22px;
+  cursor: pointer;
+  letter-spacing: .02em;
+  transition: transform .12s ease, box-shadow .12s ease;
+  box-shadow: 0 0 0 0 rgba(74,222,128,.4);
+  animation: pulse 1.8s infinite;
+}
+button.run:hover { transform: translateY(-2px); }
+button.run:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(74,222,128,.45); }
+  70% { box-shadow: 0 0 0 14px rgba(74,222,128,0); }
+  100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+}
+
+/* ---------- Ticket ---------- */
+.ticket-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  perspective: 1000px;
+}
+.ticket {
+  pointer-events: auto;
+  width: min(560px, 94vw);
+  background: var(--ticket-paper);
+  color: var(--ticket-ink);
+  border-radius: 14px;
+  display: grid;
+  grid-template-columns: 1fr 128px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(60px) rotateX(25deg) scale(.9);
+  box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+.ticket.show {
+  animation: ticketIn .9s cubic-bezier(.2,.9,.3,1.15) forwards;
+}
+@keyframes ticketIn {
+  to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+}
+
+.ticket-main {
+  padding: 26px 24px 24px;
+  position: relative;
+}
+.ticket-stripe {
+  height: 8px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--coral) 0 18px,
+    var(--yellow) 18px 36px,
+    var(--teal) 36px 54px,
+    var(--magenta) 54px 72px
+  );
+  position: absolute;
+  top: 0; left: 0; right: 0;
+}
+.eyebrow {
+  font-family: 'Archivo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #8b6f47;
+  margin-top: 10px;
+}
+h1 {
+  font-family: 'Archivo Black', 'Archivo', sans-serif;
+  font-size: clamp(24px, 5.4vw, 34px);
+  line-height: 1.04;
+  margin: 6px 0 4px;
+  letter-spacing: -.01em;
+}
+.tour {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--coral);
+  margin-bottom: 16px;
+}
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  font-family: 'Archivo', sans-serif;
+}
+.meta .k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #9aa0b5;
+}
+.meta .v {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ticket-stub {
+  border-left: 2px dashed #cfc6b4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 10px;
+  background: #f6efe0;
+  text-align: center;
+}
+.stub-admit {
+  font-family: 'Archivo', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: #8b6f47;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.stub-num {
+  font-family: 'Archivo Black', sans-serif;
+  font-size: 40px;
+  line-height: 1;
+}
+.stub-label {
+  font-family: 'Archivo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ticket-ink);
+}
+.punch {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--bg);
+  position: absolute;
+}
+.punch.top { top: -13px; right: 115px; }
+.punch.bot { bottom: -13px; right: 115px; }
+.ticket-main, .ticket-stub { position: relative; }
+
+.tagline {
+  margin-top: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: #8b6f47;
+}
+
+/* ---------- Confetti ---------- */
+.confetti {
+  position: fixed;
+  top: -30px;
+  pointer-events: none;
+  z-index: 50;
+}
+.confetti.tri {
+  width: 0; height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom-width: 12px;
+  border-bottom-style: solid;
+}
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(720deg); }
+}
+
+.terminal.done { transform: translateY(-8px) scale(.97); opacity: .25; filter: blur(1px); }
+
+@media (max-width: 480px) {
+  .ticket { grid-template-columns: 1fr 92px; }
+  .stub-num { font-size: 30px; }
+  .punch.top, .punch.bot { right: 80px; }
+  .screen { font-size: 12px; padding: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor, button.run { animation: none; }
+  .ticket.show { animation: none; opacity: 1; transform: none; }
+  .confetti { display: none; }
+  .terminal, .ticket { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="terminal" id="terminal">
+    <div class="titlebar">
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+      <span>ruby@mckbook — surprise.py — 80×24</span>
+    </div>
+    <div class="screen" id="screen"></div>
+    <div class="runbar" id="runbar">
+      <button class="run" id="runBtn">▶ python surprise.py</button>
+    </div>
+  </div>
+
+  <div class="ticket-wrap">
+    <div class="ticket" id="ticket" role="region" aria-label="Concert ticket">
+      <div class="punch top"></div>
+      <div class="punch bot"></div>
+      <div class="ticket-main">
+        <div class="ticket-stripe"></div>
+        <div class="eyebrow">Live in concert</div>
+        <h1>TWO DOOR<br>CINEMA CLUB</h1>
+        <div class="tour">Tourist History 15th Anniversary Tour</div>
+        <div class="meta">
+          <div><div class="k">Date</div><div class="v">Sun, Oct 4</div></div>
+          <div><div class="k">Doors</div><div class="v">7:00 PM</div></div>
+          <div><div class="k">Venue</div><div class="v">The Fillmore Detroit</div></div>
+          <div><div class="k">Section</div><div class="v">General Admission</div></div>
+        </div>
+        <div class="tagline">// this is what you get when you say yes to me &lt;3</div>
+      </div>
+      <div class="ticket-stub">
+        <div class="stub-admit">Admit</div>
+        <div class="stub-num">×2</div>
+        <div class="stub-label">Nick + Ruby</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const screen = document.getElementById('screen');
+const runbar = document.getElementById('runbar');
+const runBtn = document.getElementById('runBtn');
+const terminal = document.getElementById('terminal');
+const ticket = document.getElementById('ticket');
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const codeLines = [
+  '<span class="c-cm"># surprise.py — written just for you</span>',
+  '<span class="c-kw">import</span> october',
+  '<span class="c-kw">from</span> detroit <span class="c-kw">import</span> the_fillmore',
+  '<span class="c-kw">from</span> us <span class="c-kw">import</span> plans',
+  '',
+  '<span class="c-kw">def</span> <span class="c-fn">surprise</span>(you):',
+  '    band = <span class="c-str">"?????????"</span>  <span class="c-cm"># encrypted 🔒</span>',
+  '    tickets = plans.<span class="c-fn">reserve</span>(count=<span class="c-str">2</span>)',
+  '    <span class="c-kw">return</span> the_fillmore.<span class="c-fn">reveal</span>(band, tickets)',
+];
+
+const outputLines = [
+  '<span class="c-prompt">$</span> python surprise.py',
+  '<span class="c-ok">✓</span> importing october... done',
+  '<span class="c-ok">✓</span> locating The Fillmore Detroit... found',
+  '<span class="c-ok">✓</span> reserving 2 tickets... secured',
+  '<span class="c-warn">⚡</span> decrypting band name...',
+  '<span class="c-ok">✓</span> decrypted: <span class="c-str">"TWO DOOR CINEMA CLUB"</span>',
+  '<span class="c-ok">✓</span> Tourist History 15th Anniversary Tour',
+  '',
+  '<span class="c-ok">>>> rendering ticket...</span>',
+];
+
+let cursorEl = null;
+
+function addCursor() {
+  cursorEl = document.createElement('span');
+  cursorEl.className = 'cursor';
+  screen.appendChild(cursorEl);
+}
+function removeCursor() { if (cursorEl) cursorEl.remove(); }
+
+function typeLine(html, speed) {
+  return new Promise(resolve => {
+    removeCursor();
+    const line = document.createElement('div');
+    line.className = 'line';
+    screen.appendChild(line);
+    if (reduced) { line.innerHTML = html || '&nbsp;'; resolve(); return; }
+    // Type visible text progressively by revealing the parsed HTML char count
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const fullText = tmp.textContent;
+    let i = 0;
+    if (!fullText) { line.innerHTML = '&nbsp;'; resolve(); return; }
+    const interval = setInterval(() => {
+      i++;
+      // Rebuild partial: walk nodes and slice text
+      line.innerHTML = partialHTML(html, i);
+      if (i >= fullText.length) {
+        clearInterval(interval);
+        line.innerHTML = html;
+        resolve();
+      }
+    }, speed);
+  });
+}
+
+function partialHTML(html, count) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  let remaining = count;
+  function walk(node) {
+    for (let child of Array.from(node.childNodes)) {
+      if (remaining <= 0) { node.removeChild(child); continue; }
+      if (child.nodeType === Node.TEXT_NODE) {
+        if (child.textContent.length > remaining) {
+          child.textContent = child.textContent.slice(0, remaining);
+          remaining = 0;
+        } else {
+          remaining -= child.textContent.length;
+        }
+      } else {
+        walk(child);
+        if (child.textContent.length === 0) node.removeChild(child);
+      }
+    }
+  }
+  walk(container);
+  return container.innerHTML;
+}
+
+async function typeSequence(lines, speed, pause) {
+  for (const l of lines) {
+    await typeLine(l, speed);
+    await new Promise(r => setTimeout(r, reduced ? 0 : pause));
+  }
+  addCursor();
+}
+
+function confettiBurst() {
+  if (reduced) return;
+  const colors = ['#ff6b6b', '#ffd93d', '#4ecdc4', '#e86ad0', '#4ade80'];
+  for (let i = 0; i < 90; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti tri';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.borderBottomColor = colors[Math.floor(Math.random() * colors.length)];
+    const dur = 2.4 + Math.random() * 2.2;
+    c.style.animation = `fall ${dur}s linear ${Math.random() * 1.4}s forwards`;
+    c.style.transform = `rotate(${Math.random() * 360}deg)`;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), (dur + 2) * 1000);
+  }
+}
+
+async function boot() {
+  await typeSequence(codeLines, 14, 110);
+  runbar.classList.add('show');
+}
+
+runBtn.addEventListener('click', async () => {
+  runbar.classList.remove('show');
+  removeCursor();
+  await typeSequence(outputLines, 18, 260);
+  await new Promise(r => setTimeout(r, reduced ? 0 : 500));
+  terminal.classList.add('done');
+  ticket.classList.add('show');
+  confettiBurst();
+});
+
+boot();
+</script>
+</body>
+</html>
